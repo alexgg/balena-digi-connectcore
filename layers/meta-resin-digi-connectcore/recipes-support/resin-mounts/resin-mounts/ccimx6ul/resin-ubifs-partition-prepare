@@ -1,0 +1,97 @@
+#!/bin/sh
+
+set -e
+
+LABEL_TIMEOUT=1900
+
+help () {
+	cat << EOF
+Prepare a ubifs partition for first use
+$0 <ARGUMENTS>
+
+ARGUMENTS:
+	-h, --help
+		Print this message.
+	--part <LABEL>
+		Action: Init partition with given label
+EOF
+}
+
+# Parse arguments
+while [ "$#" -ge 1 ]; do
+	i="$1"
+	case $i in
+		-h|--help)
+			help
+			exit 0
+			;;
+		--part)
+			if [ -z "$2" ]; then
+				echo "ERROR: $1 argument needs a value."
+			fi
+			part_label="$2"
+			action="init"
+			shift
+			;;
+		*)
+			echo "ERROR: Unrecognized option $1."
+			help
+			exit 1
+			;;
+	esac
+	shift
+done
+
+if [ -z "$action" ]; then
+	echo "ERROR: Required arguments not provided."
+	help
+	exit 1
+fi
+
+part_mountpoint="/mnt/${part_label#resin-}"
+ubifs_filename="default-${part_label#resin-}.ubifs"
+label_path="/dev/disk/by-label/$part_label"
+
+if [ ! -d "$part_mountpoint" ]; then
+	echo "ERROR: Target mountpoint $part_mountpoint not found."
+	exit 1
+fi
+
+if [ "$part_label" = "resin-state" ]; then
+	ubidev_path="/dev/ubi0"
+elif [ "$part_label" = "resin-data" ]; then
+	ubidev_path="/dev/ubi4"
+else
+	echo "ERROR: Invalid partition $part_label."
+	exit 1
+fi
+
+resin_wait_udev_label () {
+	start="$(date +%s)"
+	end="$start"
+	while [ ! -L "$label_path" ]; do
+		if [ $((end - start)) -le "$LABEL_TIMEOUT" ]; then
+			sleep 0.1 && end=$((end + 1))
+		else
+			echo "ERROR: Timeout while waiting for filesystem label to appear."
+			exit 1
+		fi
+	done
+}
+
+case $action in
+	init)
+		if [ -L "$label_path" ]; then
+			ubinfo $label_path  > /dev/null && echo "INFO: $label_path already initialized." && exit 0
+		else
+			ubimkvol $ubidev_path -N $part_label -m || exit 1
+			resin_wait_udev_label
+			ubiupdatevol $label_path /mnt/boot/$ubifs_filename && echo "INFO: Success initializing $label_path" && exit 0
+		fi
+		exit 1
+		;;
+	*)
+		echo "ERROR: Unknown action to carry on."
+		exit 1
+		;;
+esac

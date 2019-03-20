@@ -1,0 +1,13 @@
+[Unit]
+Description=Resin ubifs data partition init service
+DefaultDependencies=no
+Before=resin-data.service
+After=resin-boot.service
+ConditionVirtualization=!docker
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/resin-ubifs-partition-prepare --part resin-data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Resin ubifs state partition init service
+DefaultDependencies=no
+Before=resin-state.service
+After=resin-boot.service
+ConditionVirtualization=!docker
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/resin-ubifs-partition-prepare --part resin-state
+
+[Install]
+WantedBy=multi-user.target
