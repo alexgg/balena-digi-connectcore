@@ -26,3 +26,9 @@ do_install_append_ccimx6ul () {
 FILES_${PN}_append_ccimx6ul = " \
     resin-ubifs-partition-prepare \
 "
+
+#######
+
+BINDMOUNTS_remove_ccimx6ul = " \
+        /etc/udev/rules.d \
+"
