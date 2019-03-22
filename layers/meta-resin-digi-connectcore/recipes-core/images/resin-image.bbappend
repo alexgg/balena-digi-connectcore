@@ -1,4 +1,5 @@
-IMAGE_FSTYPES_ccimx6ul = "tar.bz2 ubifs boot.ubifs"
+IMAGE_FSTYPES_ccimx6ul = "tar.bz2 hostapp boot.ubifs"
+RESIN_HOSTAPP_FSTYPE = "ubifs"
 
 DEPENDS_append_ccimx6ul = " mtd-utils-native"
 
