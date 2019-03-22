@@ -6,6 +6,6 @@ ubi part resin-boot
 ubifsmount ubi0:resin-boot
 ubifsload ${loadaddr} zImage-initramfs-${platform}.bin
 ubifsload ${fdt_addr} imx6ul-${platform}.dtb
-env set bootargs console=${console},${baudrate} ${mtdparts} ubi.mtd=2 ubi.mtd=3 ubi.mtd=4 ubi.mtd=5 ubi.mtd=6 root=LABEL=resin-rootA rootfstype=ubifs
+run bootargs_nand_linux
 bootz ${loadaddr} - ${fdt_addr}
 
