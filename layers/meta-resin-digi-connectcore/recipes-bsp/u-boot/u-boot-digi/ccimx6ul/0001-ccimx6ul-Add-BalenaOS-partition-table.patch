@@ -1,4 +1,4 @@
-From d319cf5e756a96efca093c28d645e8b469233f0f Mon Sep 17 00:00:00 2001
+From b895fd8553350488814fc6ec9e6c1edbc2c67606 Mon Sep 17 00:00:00 2001
 From: Alex Gonzalez <alex.gonzalez@digi.com>
 Date: Mon, 18 Mar 2019 18:45:13 +0100
 Subject: [PATCH] ccimx6ul: Add BalenaOS partition table
@@ -13,17 +13,17 @@ mtdparts=gpmi-nand:3m(bootloader),3m(environment),20m(resin-state),24m(resin-boo
 
 Signed-off-by: Alex Gonzalez <alex.gonzalez@digi.com>
 ---
- include/configs/ccimx6ul_common.h | 26 +++++++++++++++-----------
- include/configs/ccimx6ulsbc.h     |  7 +++++--
- include/configs/ccimx6ulstarter.h |  7 +++++--
- scripts/config_whitelist.txt      |  4 ++++
- 4 files changed, 29 insertions(+), 15 deletions(-)
+ include/configs/ccimx6ul_common.h | 34 ++++++++++++++++++++++------------
+ include/configs/ccimx6ulsbc.h     | 16 ++++++++++++++--
+ include/configs/ccimx6ulstarter.h | 16 ++++++++++++++--
+ scripts/config_whitelist.txt      | 10 ++++++++++
+ 4 files changed, 60 insertions(+), 16 deletions(-)
 
 diff --git a/include/configs/ccimx6ul_common.h b/include/configs/ccimx6ul_common.h
-index ba4de9b43588..540c9a7a1f8b 100644
+index ba4de9b43588..1860f2ac75bb 100644
 --- a/include/configs/ccimx6ul_common.h
 +++ b/include/configs/ccimx6ul_common.h
-@@ -188,26 +188,30 @@
+@@ -188,30 +188,40 @@
  /* MTD (NAND) */
  #define CONFIG_SKIP_NAND_BBT_SCAN
  #define CONFIG_UBOOT_PARTITION		"bootloader"
@@ -40,11 +40,12 @@ index ba4de9b43588..540c9a7a1f8b 100644
  					"3m(" CONFIG_UBOOT_PARTITION ")," \
  					"1m(environment)," \
 -					"1m(safe)," \
-+					"10m(" CONFIG_SAFE_PARTITION ")," \
- 					"12m(" CONFIG_LINUX_PARTITION ")," \
+-					"12m(" CONFIG_LINUX_PARTITION ")," \
 -					"14m(" CONFIG_RECOVERY_PARTITION ")," \
 -					"122m(rootfs)," \
 -					"-(update)"
++					"10m(" CONFIG_SAFE_PARTITION ")," \
++					"20m(" CONFIG_LINUX_PARTITION ")," \
 +					"100m(" CONFIG_RECOVERY_PARTITION ")," \
 +					"100m(" CONFIG_ROOTFS_PARTITION ")," \
 +					"-(" CONFIG_UPDATE_PARTITION ")"
@@ -57,7 +58,7 @@ index ba4de9b43588..540c9a7a1f8b 100644
 -					"512m(rootfs)," \
 -					"-(update)"
 +					"20m(" CONFIG_SAFE_PARTITION ")," \
-+					"12m(" CONFIG_LINUX_PARTITION ")," \
++					"20m(" CONFIG_LINUX_PARTITION ")," \
 +					"312m(" CONFIG_RECOVERY_PARTITION ")," \
 +					"312m(" CONFIG_ROOTFS_PARTITION ")," \
 +					"-(" CONFIG_UPDATE_PARTITION ")"
@@ -65,69 +66,115 @@ index ba4de9b43588..540c9a7a1f8b 100644
  #define CONFIG_ENV_MTD_LINUX_INDEX	"3"
  #define CONFIG_ENV_MTD_RECOVERY_INDEX	"4"
  #define CONFIG_ENV_MTD_ROOTFS_INDEX	"5"
+ #define CONFIG_ENV_MTD_UPDATE_INDEX	"6"
++#define CONFIG_ENV_MTD_SAFE_MAX_BEB_PER1024		"5"
++#define CONFIG_ENV_MTD_LINUX_MAX_BEB_PER1024		"5"
++#define CONFIG_ENV_MTD_RECOVERY_MAX_BEB_PER1024	"5"
++#define CONFIG_ENV_MTD_ROOTFS_MAX_BEB_PER1024		"5"
++#define CONFIG_ENV_MTD_UPDATE_MAX_BEB_PER1024		"5"
++#define CONFIG_ENV_MTD_ROOT		"LABEL=resin-rootA"
+ #define CONFIG_ENV_MTD_SETTINGS		"mtdids=" MTDIDS_DEFAULT "\0"
+ 
+ /* Max percentage of reserved blocks for bad block management per partition */
 diff --git a/include/configs/ccimx6ulsbc.h b/include/configs/ccimx6ulsbc.h
-index 19040b0ea78b..8a5b45437297 100644
+index 19040b0ea78b..d65017a5d0e7 100644
 --- a/include/configs/ccimx6ulsbc.h
 +++ b/include/configs/ccimx6ulsbc.h
-@@ -185,8 +185,10 @@
+@@ -185,8 +185,13 @@
  	CONFIG_ENV_MTD_SETTINGS \
  	"bootargs_linux=\0" \
  	"bootargs_nand_linux=setenv bootargs console=${console},${baudrate} " \
 -		"${bootargs_linux} ${mtdparts} ubi.mtd=${mtdlinuxindex} " \
 -		"ubi.mtd=${mtdrootfsindex} root=ubi1_0 " \
-+		"${bootargs_linux} ${mtdparts} ubi.mtd=${mtdsafeindex} " \
-+		"ubi.mtd=${mtdlinuxindex} ubi.mtd=${mtdrecoveryindex} " \
-+		"ubi.mtd=${mtdrootfsindex} ubi.mtd=${mtdupdateindex} " \
-+		"root=ubi3_0 " \
++		"${bootargs_linux} ${mtdparts} " \
++		"ubi.mtd=${mtdsafeindex},0,${mtdsafemaxbebper1024} " \
++		"ubi.mtd=${mtdlinuxindex},0,${mtdlinuxmaxbebper1024} " \
++		"ubi.mtd=${mtdrecoveryindex},0,${mtdrecoverymaxbebper1024} " \
++		"ubi.mtd=${mtdrootfsindex},0,${mtdrootfsmaxbebper1024} " \
++		"ubi.mtd=${mtdupdateindex},0,${mtdupdatemaxbebper1024} " \
++		"root=${mtdroot} " \
  		"rootfstype=ubifs rw " \
  		"${bootargs_once} ${extra_bootargs}\0" \
  	"install_linux_fw_sd=if load mmc 0 ${loadaddr} install_linux_fw_sd.scr;then " \
-@@ -203,6 +205,7 @@
+@@ -203,10 +208,17 @@
  			"fi;" \
  		"fi;\0" \
  	"mtdbootpart=" CONFIG_LINUX_PARTITION "\0" \
++	"mtdroot=" CONFIG_ENV_MTD_ROOT "\0" \
 +	"mtdsafeindex=" CONFIG_ENV_MTD_SAFE_INDEX "\0" \
  	"mtdlinuxindex=" CONFIG_ENV_MTD_LINUX_INDEX "\0" \
  	"mtdrecoveryindex=" CONFIG_ENV_MTD_RECOVERY_INDEX "\0" \
  	"mtdrootfsindex=" CONFIG_ENV_MTD_ROOTFS_INDEX "\0" \
+ 	"mtdupdateindex=" CONFIG_ENV_MTD_UPDATE_INDEX "\0" \
++	"mtdsafemaxbebper1024=" CONFIG_ENV_MTD_SAFE_MAX_BEB_PER1024 "\0" \
++	"mtdlinuxmaxbebper1024=" CONFIG_ENV_MTD_LINUX_MAX_BEB_PER1024 "\0" \
++	"mtdrecoverymaxbebper1024=" CONFIG_ENV_MTD_RECOVERY_MAX_BEB_PER1024 "\0" \
++	"mtdrootfsmaxbebper1024=" CONFIG_ENV_MTD_ROOTFS_MAX_BEB_PER1024 "\0" \
++	"mtdupdatemaxbebper1024=" CONFIG_ENV_MTD_UPDATE_MAX_BEB_PER1024 "\0" \
+ 	"recoverycmd=" \
+ 		"setenv mtdbootpart " CONFIG_RECOVERY_PARTITION ";" \
+ 		"boot\0" \
 diff --git a/include/configs/ccimx6ulstarter.h b/include/configs/ccimx6ulstarter.h
-index 5f23f5cce4b2..0a1f85d8d86b 100644
+index 5f23f5cce4b2..1b803504b347 100644
 --- a/include/configs/ccimx6ulstarter.h
 +++ b/include/configs/ccimx6ulstarter.h
-@@ -185,8 +185,10 @@
+@@ -185,8 +185,13 @@
  	CONFIG_ENV_MTD_SETTINGS \
  	"bootargs_linux=\0" \
  	"bootargs_nand_linux=setenv bootargs console=${console},${baudrate} " \
 -		"${bootargs_linux} ${mtdparts} ubi.mtd=${mtdlinuxindex} " \
 -		"ubi.mtd=${mtdrootfsindex} root=ubi1_0 " \
-+		"${bootargs_linux} ${mtdparts} ubi.mtd=${mtdsafeindex} " \
-+		"ubi.mtd=${mtdlinuxindex} ubi.mtd=${mtdrecoveryindex} " \
-+		"ubi.mtd=${mtdrootfsindex} ubi.mtd=${mtdupdateindex} " \
-+		"root=ubi3_0 " \
++		"${bootargs_linux} ${mtdparts} " \
++		"ubi.mtd=${mtdsafeindex},0,${mtdsafemaxbebper1024} " \
++		"ubi.mtd=${mtdlinuxindex},0,${mtdlinuxmaxbebper1024} " \
++		"ubi.mtd=${mtdrecoveryindex},0,${mtdrecoverymaxbebper1024} " \
++		"ubi.mtd=${mtdrootfsindex},0,${mtdrootfsmaxbebper1024} " \
++		"ubi.mtd=${mtdupdateindex},0,${mtdupdatemaxbebper1024} " \
++		"root=${mtdroot} " \
  		"rootfstype=ubifs rw " \
  		"${bootargs_once} ${extra_bootargs}\0" \
  	"install_linux_fw_sd=if load mmc 0 ${loadaddr} install_linux_fw_sd.scr;then " \
-@@ -203,6 +205,7 @@
+@@ -203,10 +208,17 @@
  			"fi;" \
  		"fi;\0" \
  	"mtdbootpart=" CONFIG_LINUX_PARTITION "\0" \
++	"mtdroot=" CONFIG_ENV_MTD_ROOT "\0" \
 +	"mtdsafeindex=" CONFIG_ENV_MTD_SAFE_INDEX "\0" \
  	"mtdlinuxindex=" CONFIG_ENV_MTD_LINUX_INDEX "\0" \
  	"mtdrecoveryindex=" CONFIG_ENV_MTD_RECOVERY_INDEX "\0" \
  	"mtdrootfsindex=" CONFIG_ENV_MTD_ROOTFS_INDEX "\0" \
+ 	"mtdupdateindex=" CONFIG_ENV_MTD_UPDATE_INDEX "\0" \
++	"mtdsafemaxbebper1024=" CONFIG_ENV_MTD_SAFE_MAX_BEB_PER1024 "\0" \
++	"mtdlinuxmaxbebper1024=" CONFIG_ENV_MTD_LINUX_MAX_BEB_PER1024 "\0" \
++	"mtdrecoverymaxbebper1024=" CONFIG_ENV_MTD_RECOVERY_MAX_BEB_PER1024 "\0" \
++	"mtdrootfsmaxbebper1024=" CONFIG_ENV_MTD_ROOTFS_MAX_BEB_PER1024 "\0" \
++	"mtdupdatemaxbebper1024=" CONFIG_ENV_MTD_UPDATE_MAX_BEB_PER1024 "\0" \
+ 	"recoverycmd=" \
+ 		"setenv mtdbootpart " CONFIG_RECOVERY_PARTITION ";" \
+ 		"boot\0" \
 diff --git a/scripts/config_whitelist.txt b/scripts/config_whitelist.txt
-index 111bc05a2362..f5f2505119f7 100644
+index 111bc05a2362..7dd4247801e1 100644
 --- a/scripts/config_whitelist.txt
 +++ b/scripts/config_whitelist.txt
-@@ -997,6 +997,7 @@ CONFIG_ENV_MIN_ENTRIES
+@@ -995,10 +995,17 @@ CONFIG_ENV_IS_NOWHERE
+ CONFIG_ENV_MAX_ENTRIES
+ CONFIG_ENV_MIN_ENTRIES
  CONFIG_ENV_MTD_LINUX_INDEX
++CONFIG_ENV_MTD_LINUX_MAX_BEB_PER1024
  CONFIG_ENV_MTD_RECOVERY_INDEX
++CONFIG_ENV_MTD_RECOVERY_MAX_BEB_PER1024
++CONFIG_ENV_MTD_ROOT
  CONFIG_ENV_MTD_ROOTFS_INDEX
++CONFIG_ENV_MTD_ROOTFS_MAX_BEB_PER1024
 +CONFIG_ENV_MTD_SAFE_INDEX
++CONFIG_ENV_MTD_SAFE_MAX_BEB_PER1024
  CONFIG_ENV_MTD_SETTINGS
  CONFIG_ENV_MTD_UPDATE_INDEX
++CONFIG_ENV_MTD_UPDATE_MAX_BEB_PER1024
  CONFIG_ENV_OFFSET
-@@ -2636,6 +2637,7 @@ CONFIG_ROCKCHIP_SDHCI_MAX_FREQ
+ CONFIG_ENV_OFFSET_OOB
+ CONFIG_ENV_OFFSET_REDUND
+@@ -2636,6 +2643,7 @@ CONFIG_ROCKCHIP_SDHCI_MAX_FREQ
  CONFIG_ROCKCHIP_USB2_PHY
  CONFIG_ROM_STUBS
  CONFIG_ROOTFS_OFFSET
@@ -135,7 +182,7 @@ index 111bc05a2362..f5f2505119f7 100644
  CONFIG_ROOTPATH
  CONFIG_RSK7203
  CONFIG_RSK7264
-@@ -2692,6 +2694,7 @@ CONFIG_S5P_PA_SYSRAM
+@@ -2692,6 +2700,7 @@ CONFIG_S5P_PA_SYSRAM
  CONFIG_S6E63D6
  CONFIG_S6E8AX0
  CONFIG_SABRELITE
@@ -143,7 +190,7 @@ index 111bc05a2362..f5f2505119f7 100644
  CONFIG_SAMA5D2
  CONFIG_SAMA5D3
  CONFIG_SAMA5D3_LCD_BASE
-@@ -6697,6 +6700,7 @@ CONFIG_UNIPHIER_ETH
+@@ -6697,6 +6706,7 @@ CONFIG_UNIPHIER_ETH
  CONFIG_UPDATEB
  CONFIG_UPDATEFILE_SUPPORTED_SOURCES_ARGS_HELP
  CONFIG_UPDATE_LOAD_ADDR
