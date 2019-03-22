@@ -1,0 +1,9 @@
+meta-resin:
+
+* The hostapp-update-hooks package contains a 99-resin-uboot and 99-resin-grub scripts that assumes block devices
+* The balena-rollback package contains a rollback-parse-bootloader script that assumes block devices
+* Need to default to overlay2, now it is done in the local.conf with:
+	BALENA_STORAGE = "overlay2"
+* Need to move the initialization of state and data to the initramfs
+* Need to initialize rootB too
+* Need to symlink the hostapp-ubifs image in the deploy folder, maybe rename the extension
