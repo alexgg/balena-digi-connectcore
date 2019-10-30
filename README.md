@@ -1,5 +1,9 @@
 #  balena-digi-connectcore repository
 
+<div class="alert alert-success">
+This repository is no longer maintained
+</div>
+
 ## Clone/Initialize the repository
 
 There are two ways of initializing this repository:
